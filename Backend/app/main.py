@@ -7,6 +7,7 @@ from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.core.config import get_settings
+from app.api.routes import router as api_router
 from app.db.session import close_database, get_engine
 
 
@@ -21,6 +22,8 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
+
+app.include_router(api_router)
 
 
 @app.get("/")
