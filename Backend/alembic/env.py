@@ -21,7 +21,7 @@ if not database_url:
         "to Backend/.env and set the PostgreSQL connection string."
     )
 
-config.set_main_option("sqlalchemy.url", database_url)
+config.set_main_option("sqlalchemy.url", database_url.replace("%", "%%"))
 target_metadata = Base.metadata
 
 
