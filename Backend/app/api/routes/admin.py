@@ -27,6 +27,17 @@ from slugify import slugify
 router = APIRouter(prefix="/admin", tags=["admin"])
 
 
+@router.get("/clinics", response_model=list[ClinicResponse])
+async def list_clinics(
+    db: AsyncSession = Depends(get_db),
+    _admin: User = Depends(require_admin),
+):
+    result = await db.execute(
+        select(Clinic).order_by(Clinic.created_at.desc())
+    )
+    return result.scalars().all()
+
+
 @router.post("/dental-users", status_code=status.HTTP_201_CREATED)
 async def create_dental_user(
     payload: DentalUserCreate,
@@ -56,7 +67,11 @@ async def create_dental_user(
         if clinic is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Clinic not found",
+                detail={
+                    "message": "Clinic not found",
+                    "clinic_id": str(payload.clinic_id),
+                    "action": "Create the clinic with POST /admin/clinics or set clinic_id to null.",
+                },
             )
 
     user = User(
@@ -95,6 +110,7 @@ async def create_dental_user(
         "role": user.role.value,
         "status": user.status.value,
         "must_change_password": user.must_change_password,
+        "clinic_id": str(payload.clinic_id) if payload.clinic_id is not None else None,
     }
 
 

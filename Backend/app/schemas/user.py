@@ -50,7 +50,11 @@ class DentalUserCreate(BaseModel):
         description="Repeat the temporary password exactly.",
         examples=["Dental!2026Temp"],
     )
-    clinic_id: uuid.UUID | None = None
+    clinic_id: uuid.UUID | None = Field(
+        default=None,
+        description="Optional existing clinic UUID. Leave null to create a dental account without clinic assignment.",
+        examples=[None],
+    )
     create_dentist_profile: bool = Field(
         default=True,
         description="Create an empty dentist profile for the dental account.",

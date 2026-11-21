@@ -7,6 +7,8 @@ from app.models.clinic import ClinicStatus, MembershipRole, MembershipStatus
 
 
 class ClinicCreate(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
     name: str = Field(min_length=2, max_length=200)
     owner_username: str = Field(min_length=3, max_length=150, pattern=r"^[a-zA-Z0-9._-]+$")
     owner_email: EmailStr
