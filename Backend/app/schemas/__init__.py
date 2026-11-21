@@ -1,5 +1,10 @@
-from app.schemas.auth import AcceptInviteRequest, LoginRequest, TokenResponse
-from app.schemas.user import UserCreate, UserResponse
+from app.schemas.auth import (
+    AcceptInviteRequest,
+    ChangePasswordRequest,
+    LoginRequest,
+    TokenResponse,
+)
+from app.schemas.user import DentalUserCreate, UserCreate, UserResponse
 from app.schemas.clinic import (
     ClinicCreate,
     ClinicLocationCreate,
@@ -16,6 +21,8 @@ __all__ = [
     "TokenResponse",
     "UserCreate",
     "UserResponse",
+    "DentalUserCreate",
+    "ChangePasswordRequest",
     "ClinicCreate",
     "ClinicLocationCreate",
     "ClinicMembershipCreate",
