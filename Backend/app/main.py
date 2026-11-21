@@ -3,6 +3,8 @@ from contextlib import asynccontextmanager
 from asyncpg.exceptions import PostgresError
 from fastapi import FastAPI, status
 from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
+from fastapi import Request
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -24,6 +26,37 @@ app = FastAPI(
 )
 
 app.include_router(api_router)
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(
+    request: Request,
+    exc: RequestValidationError,
+):
+    normalized_errors = []
+    for error in exc.errors():
+        error_type = error.get("type")
+        message = error.get("msg", "Invalid value")
+
+        if error_type == "json_invalid":
+            message = (
+                "Request body is not valid JSON. Check that every string "
+                "is enclosed in double quotes and that all commas are correct."
+            )
+
+        normalized_errors.append({
+            "field": ".".join(str(part) for part in error.get("loc", ()) if part != "body"),
+            "message": message,
+            "type": error_type,
+        })
+
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content={
+            "detail": "Request validation failed",
+            "errors": normalized_errors,
+        },
+    )
 
 
 @app.get("/")

@@ -33,10 +33,14 @@ async def create_dental_user(
     db: AsyncSession = Depends(get_db),
     _admin: User = Depends(require_admin),
 ):
+    username = payload.username.strip()
+    email = str(payload.email).lower()
+    full_name = payload.full_name.strip()
+
     existing = await db.execute(
         select(User).where(
-            (User.username == payload.username)
-            | (User.email == str(payload.email).lower())
+            (User.username == username)
+            | (User.email == email)
         )
     )
     if existing.scalar_one_or_none() is not None:
@@ -56,9 +60,9 @@ async def create_dental_user(
             )
 
     user = User(
-        username=payload.username,
-        email=str(payload.email).lower(),
-        full_name=payload.full_name,
+        username=username,
+        email=email,
+        full_name=full_name,
         role=UserRole.DENTAL,
         status=UserStatus.ACTIVE,
         password_hash=hash_password(payload.temporary_password.get_secret_value()),
