@@ -19,7 +19,6 @@ class UserCreate(BaseModel):
     username: str = Field(min_length=3, max_length=150, pattern=r"^[a-zA-Z0-9._-]+$")
     email: EmailStr
     full_name: str = Field(min_length=2, max_length=200)
-    role: UserRole = UserRole.DENTAL
 
 
 class DentalUserCreate(BaseModel):
@@ -50,14 +49,9 @@ class DentalUserCreate(BaseModel):
         description="Repeat the temporary password exactly.",
         examples=["Dental!2026Temp"],
     )
-    clinic_id: uuid.UUID | None = Field(
-        default=None,
-        description="Optional existing clinic UUID. Leave null to create a dental account without clinic assignment.",
-        examples=[None],
-    )
-    create_dentist_profile: bool = Field(
-        default=True,
-        description="Create an empty dentist profile for the dental account.",
+    clinic_id: uuid.UUID = Field(
+        description="Existing clinic UUID to which this dental owner is assigned.",
+        examples=["00000000-0000-0000-0000-000000000001"],
     )
 
     @field_validator("temporary_password")

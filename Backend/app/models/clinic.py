@@ -19,9 +19,6 @@ class ClinicStatus(str, Enum):
 
 class MembershipRole(str, Enum):
     OWNER = "owner"
-    DENTIST = "dentist"
-    RECEPTIONIST = "receptionist"
-    ACCOUNTANT = "accountant"
 
 
 class MembershipStatus(str, Enum):
@@ -103,18 +100,3 @@ class ClinicMembership(Base):
     )
     is_primary: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-
-
-class DentistProfile(Base):
-    __tablename__ = "dentist_profiles"
-
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    clinic_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("clinics.id", ondelete="CASCADE"), index=True, nullable=False)
-    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False)
-    specialization: Mapped[str | None] = mapped_column(String(200), nullable=True)
-    qualification: Mapped[str | None] = mapped_column(String(300), nullable=True)
-    license_number: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    license_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    experience_years: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    consultation_duration_minutes: Mapped[int] = mapped_column(Integer, default=30, nullable=False)
-    bio: Mapped[str | None] = mapped_column(Text, nullable=True)

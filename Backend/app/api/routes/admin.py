@@ -15,7 +15,6 @@ from app.models.clinic import (
     Clinic,
     ClinicMembership,
     ClinicStatus,
-    DentistProfile,
     MembershipRole,
     MembershipStatus,
 )
@@ -90,15 +89,10 @@ async def create_dental_user(
         db.add(ClinicMembership(
             clinic_id=payload.clinic_id,
             user_id=user.id,
-            role=MembershipRole.DENTIST,
+            role=MembershipRole.OWNER,
             status=MembershipStatus.ACTIVE,
             is_primary=True,
         ))
-        if payload.create_dentist_profile:
-            db.add(DentistProfile(
-                clinic_id=payload.clinic_id,
-                user_id=user.id,
-            ))
 
     await db.commit()
     await db.refresh(user)
@@ -110,7 +104,7 @@ async def create_dental_user(
         "role": user.role.value,
         "status": user.status.value,
         "must_change_password": user.must_change_password,
-        "clinic_id": str(payload.clinic_id) if payload.clinic_id is not None else None,
+        "clinic_id": str(payload.clinic_id),
     }
 
 
@@ -153,7 +147,7 @@ async def create_clinic(
         username=payload.owner_username,
         email=str(payload.owner_email).lower(),
         full_name=payload.owner_full_name,
-        role=UserRole.CLINIC_OWNER,
+        role=UserRole.DENTAL,
         status=UserStatus.INVITE_PENDING,
         password_hash=None,
     )

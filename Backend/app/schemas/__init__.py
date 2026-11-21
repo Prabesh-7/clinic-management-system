@@ -8,10 +8,8 @@ from app.schemas.user import DentalUserCreate, UserCreate, UserResponse
 from app.schemas.clinic import (
     ClinicCreate,
     ClinicLocationCreate,
-    ClinicMembershipCreate,
     ClinicProfileUpdate,
     ClinicResponse,
-    DentistProfileUpdate,
     WorkingHourCreate,
 )
 
@@ -25,9 +23,7 @@ __all__ = [
     "ChangePasswordRequest",
     "ClinicCreate",
     "ClinicLocationCreate",
-    "ClinicMembershipCreate",
     "ClinicProfileUpdate",
     "ClinicResponse",
-    "DentistProfileUpdate",
     "WorkingHourCreate",
 ]

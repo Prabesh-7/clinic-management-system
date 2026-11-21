@@ -61,19 +61,3 @@ class WorkingHourCreate(BaseModel):
     break_starts_at: time | None = None
     break_ends_at: time | None = None
     is_closed: bool = False
-
-
-class ClinicMembershipCreate(BaseModel):
-    username: str = Field(min_length=3, max_length=150, pattern=r"^[a-zA-Z0-9._-]+$")
-    email: EmailStr
-    full_name: str = Field(min_length=2, max_length=200)
-    role: MembershipRole = MembershipRole.DENTIST
-
-
-class DentistProfileUpdate(BaseModel):
-    specialization: str | None = Field(default=None, max_length=200)
-    qualification: str | None = Field(default=None, max_length=300)
-    license_number: str | None = Field(default=None, max_length=100)
-    experience_years: int | None = Field(default=None, ge=0, le=80)
-    consultation_duration_minutes: int = Field(default=30, ge=5, le=240)
-    bio: str | None = Field(default=None, max_length=5000)
