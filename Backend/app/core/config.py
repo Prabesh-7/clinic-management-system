@@ -27,6 +27,10 @@ class Settings(BaseSettings):
     smtp_password: str | None = None
     smtp_from_email: str | None = None
     smtp_use_tls: bool = True
+    email_provider: Literal["console", "smtp", "resend"] = "smtp"
+    email_from_name: str = "Clinic Management System"
+    email_from_email: str | None = None
+    resend_api_key: str | None = None
 
 
 @lru_cache

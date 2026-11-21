@@ -11,7 +11,10 @@ from app.db.base import Base
 
 class UserRole(str, Enum):
     ADMIN = "admin"
+    CLINIC_OWNER = "clinic_owner"
     DENTAL = "dental"
+    RECEPTIONIST = "receptionist"
+    ACCOUNTANT = "accountant"
 
 
 class UserStatus(str, Enum):

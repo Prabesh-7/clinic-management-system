@@ -9,6 +9,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.security import decode_access_token
 from app.db.session import get_db
 from app.models.user import User, UserRole, UserStatus
+from app.models.clinic import (
+    Clinic,
+    ClinicMembership,
+    MembershipRole,
+    MembershipStatus,
+    ClinicStatus,
+)
 
 bearer_scheme = HTTPBearer(auto_error=True)
 
@@ -45,3 +52,48 @@ async def require_admin(current_user: User = Depends(get_current_user)) -> User:
             detail="Administrator access required",
         )
     return current_user
+
+
+async def get_current_clinic(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> tuple[Clinic, ClinicMembership]:
+    membership_result = await db.execute(
+        select(ClinicMembership)
+        .join(Clinic, Clinic.id == ClinicMembership.clinic_id)
+        .where(
+            ClinicMembership.user_id == current_user.id,
+            ClinicMembership.status == MembershipStatus.ACTIVE,
+            Clinic.status != ClinicStatus.CLOSED,
+        )
+        .order_by(ClinicMembership.is_primary.desc())
+    )
+    membership = membership_result.scalar_one_or_none()
+    if membership is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No active clinic membership",
+        )
+
+    clinic_result = await db.execute(
+        select(Clinic).where(Clinic.id == membership.clinic_id)
+    )
+    clinic = clinic_result.scalar_one_or_none()
+    if clinic is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Clinic not found",
+        )
+    return clinic, membership
+
+
+async def require_clinic_owner(
+    context: tuple[Clinic, ClinicMembership] = Depends(get_current_clinic),
+) -> tuple[Clinic, ClinicMembership]:
+    clinic, membership = context
+    if membership.role != MembershipRole.OWNER:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Clinic owner access required",
+        )
+    return clinic, membership

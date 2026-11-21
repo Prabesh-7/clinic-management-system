@@ -22,6 +22,12 @@ class AccountInvite(Base):
         unique=True,
         nullable=False,
     )
+    clinic_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("clinics.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
     token_hash: Mapped[str] = mapped_column(
         String(64),
         unique=True,

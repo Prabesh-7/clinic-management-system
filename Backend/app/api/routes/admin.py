@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta, timezone
-import smtplib
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
@@ -11,68 +10,87 @@ from app.core.security import generate_invite_token, hash_invite_token
 from app.db.session import get_db
 from app.models.invite import AccountInvite
 from app.models.user import User, UserRole, UserStatus
-from app.schemas.user import UserCreate, UserResponse
 from app.services.email import send_invite_email
+from app.models.clinic import Clinic, ClinicMembership, MembershipRole, MembershipStatus, ClinicStatus
+from app.schemas.clinic import ClinicCreate, ClinicResponse
+from slugify import slugify
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
 
-@router.post(
-    "/dental-users",
-    response_model=UserResponse,
-    status_code=status.HTTP_201_CREATED,
-)
-async def create_dental_user(
-    payload: UserCreate,
+@router.post("/clinics", response_model=ClinicResponse, status_code=status.HTTP_201_CREATED)
+async def create_clinic(
+    payload: ClinicCreate,
     db: AsyncSession = Depends(get_db),
     _admin: User = Depends(require_admin),
-) -> User:
-    existing = await db.execute(
+) -> Clinic:
+    existing_owner = await db.execute(
         select(User).where(
-            (User.username == payload.username)
-            | (User.email == str(payload.email).lower())
+            (User.username == payload.owner_username)
+            | (User.email == str(payload.owner_email).lower())
         )
     )
-    if existing.scalar_one_or_none() is not None:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Username or email is already registered",
-        )
+    if existing_owner.scalar_one_or_none() is not None:
+        raise HTTPException(status_code=409, detail="Owner username or email already exists")
 
-    user = User(
-        username=payload.username,
-        email=str(payload.email).lower(),
-        full_name=payload.full_name,
-        role=UserRole.DENTAL,
+    base_slug = slugify(payload.name)
+    slug = base_slug
+    suffix = 2
+    while True:
+        existing = await db.execute(select(Clinic).where(Clinic.slug == slug))
+        if existing.scalar_one_or_none() is None:
+            break
+        slug = f"{base_slug}-{suffix}"
+        suffix += 1
+
+    clinic = Clinic(
+        name=payload.name,
+        slug=slug,
+        timezone=payload.timezone,
+        currency=payload.currency.upper(),
+        status=ClinicStatus.PENDING_VERIFICATION,
+    )
+    db.add(clinic)
+    await db.flush()
+
+    owner = User(
+        username=payload.owner_username,
+        email=str(payload.owner_email).lower(),
+        full_name=payload.owner_full_name,
+        role=UserRole.CLINIC_OWNER,
         status=UserStatus.INVITE_PENDING,
         password_hash=None,
     )
-    db.add(user)
+    db.add(owner)
     await db.flush()
 
+    db.add(ClinicMembership(
+        clinic_id=clinic.id,
+        user_id=owner.id,
+        role=MembershipRole.OWNER,
+        status=MembershipStatus.INVITE_PENDING,
+        is_primary=True,
+    ))
+
     raw_token = generate_invite_token()
-    invite = AccountInvite(
-        user_id=user.id,
+    db.add(AccountInvite(
+        user_id=owner.id,
+        clinic_id=clinic.id,
         token_hash=hash_invite_token(raw_token),
-        expires_at=datetime.now(timezone.utc)
-        + timedelta(hours=get_settings().invite_token_hours),
-    )
-    db.add(invite)
+        expires_at=datetime.now(timezone.utc) + timedelta(hours=get_settings().invite_token_hours),
+    ))
     await db.commit()
-    await db.refresh(user)
+    await db.refresh(clinic)
 
     try:
         await send_invite_email(
-            recipient_email=user.email,
-            recipient_name=user.full_name,
+            recipient_email=owner.email,
+            recipient_name=owner.full_name,
             raw_token=raw_token,
         )
-    except (RuntimeError, OSError, smtplib.SMTPException) as exc:
+    except Exception as exc:
         raise HTTPException(
-            status_code=status.HTTP_202_ACCEPTED,
-            detail=(
-                "Dental account created, but the invite email could not be sent"
-            ),
+            status_code=202,
+            detail="Clinic created, but the owner invite email could not be sent",
         ) from exc
-
-    return user
+    return clinic
