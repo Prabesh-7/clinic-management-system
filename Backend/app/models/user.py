@@ -43,12 +43,22 @@ class User(Base):
     full_name: Mapped[str] = mapped_column(String(200), nullable=False)
     password_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
     role: Mapped[UserRole] = mapped_column(
-        SqlEnum(UserRole, name="user_role", validate_strings=True),
+        SqlEnum(
+            UserRole,
+            name="user_role",
+            validate_strings=True,
+            values_callable=lambda enum: [member.value for member in enum],
+        ),
         nullable=False,
         index=True,
     )
     status: Mapped[UserStatus] = mapped_column(
-        SqlEnum(UserStatus, name="user_status", validate_strings=True),
+        SqlEnum(
+            UserStatus,
+            name="user_status",
+            validate_strings=True,
+            values_callable=lambda enum: [member.value for member in enum],
+        ),
         nullable=False,
         default=UserStatus.INVITE_PENDING,
     )
