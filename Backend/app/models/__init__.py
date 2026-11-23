@@ -3,10 +3,7 @@ from app.models.clinic import (
     Clinic,
     ClinicLocation,
     ClinicWorkingHour,
-    ClinicMembership,
     ClinicStatus,
-    MembershipRole,
-    MembershipStatus,
 )
 from app.models.user import User, UserRole, UserStatus
 
@@ -18,8 +15,5 @@ __all__ = [
     "Clinic",
     "ClinicLocation",
     "ClinicWorkingHour",
-    "ClinicMembership",
     "ClinicStatus",
-    "MembershipRole",
-    "MembershipStatus",
 ]

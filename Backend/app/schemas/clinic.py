@@ -1,9 +1,18 @@
 from datetime import time
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from typing import Literal
 
-from app.models.clinic import ClinicStatus, MembershipRole, MembershipStatus
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    EmailStr,
+    Field,
+    SecretStr,
+    model_validator,
+)
+
+from app.models.clinic import ClinicStatus
 
 
 class ClinicCreate(BaseModel):
@@ -15,6 +24,33 @@ class ClinicCreate(BaseModel):
     owner_full_name: str = Field(min_length=2, max_length=200)
     timezone: str = "Asia/Kathmandu"
     currency: str = Field(default="NPR", min_length=3, max_length=3)
+    credential_mode: Literal["invite", "temporary_password"] = "invite"
+    temporary_password: SecretStr | None = None
+    temporary_password_confirmation: SecretStr | None = None
+
+    @model_validator(mode="after")
+    def validate_credentials(self):
+        if self.credential_mode == "temporary_password":
+            if self.temporary_password is None or self.temporary_password_confirmation is None:
+                raise ValueError(
+                    "temporary_password and temporary_password_confirmation are required "
+                    "when credential_mode is temporary_password"
+                )
+            password = self.temporary_password.get_secret_value()
+            confirmation = self.temporary_password_confirmation.get_secret_value()
+            if password != confirmation:
+                raise ValueError("temporary_password_confirmation must match temporary_password")
+            if len(password) < 12:
+                raise ValueError("Temporary password must contain at least 12 characters")
+            if not any(c.islower() for c in password):
+                raise ValueError("Temporary password must contain a lowercase letter")
+            if not any(c.isupper() for c in password):
+                raise ValueError("Temporary password must contain an uppercase letter")
+            if not any(c.isdigit() for c in password):
+                raise ValueError("Temporary password must contain a digit")
+            if not any(not c.isalnum() for c in password):
+                raise ValueError("Temporary password must contain a special character")
+        return self
 
 
 class ClinicResponse(BaseModel):

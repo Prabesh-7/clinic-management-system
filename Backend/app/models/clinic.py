@@ -17,16 +17,6 @@ class ClinicStatus(str, Enum):
     CLOSED = "closed"
 
 
-class MembershipRole(str, Enum):
-    OWNER = "owner"
-
-
-class MembershipStatus(str, Enum):
-    INVITE_PENDING = "invite_pending"
-    ACTIVE = "active"
-    DISABLED = "disabled"
-
-
 class Clinic(Base):
     __tablename__ = "clinics"
 
@@ -38,6 +28,13 @@ class Clinic(Base):
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     timezone: Mapped[str] = mapped_column(String(100), default="Asia/Kathmandu", nullable=False)
     currency: Mapped[str] = mapped_column(String(3), default="NPR", nullable=False)
+    owner_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="PROTECT"),
+        unique=True,
+        index=True,
+        nullable=True,
+    )
     status: Mapped[ClinicStatus] = mapped_column(
         SqlEnum(ClinicStatus, name="clinic_status", validate_strings=True,
                values_callable=lambda enum: [member.value for member in enum]),
@@ -79,24 +76,3 @@ class ClinicWorkingHour(Base):
     break_starts_at: Mapped[time | None] = mapped_column(Time(timezone=False), nullable=True)
     break_ends_at: Mapped[time | None] = mapped_column(Time(timezone=False), nullable=True)
     is_closed: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-
-
-class ClinicMembership(Base):
-    __tablename__ = "clinic_memberships"
-
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    clinic_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("clinics.id", ondelete="CASCADE"), index=True, nullable=False)
-    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False)
-    role: Mapped[MembershipRole] = mapped_column(
-        SqlEnum(MembershipRole, name="membership_role", validate_strings=True,
-               values_callable=lambda enum: [member.value for member in enum]),
-        nullable=False,
-    )
-    status: Mapped[MembershipStatus] = mapped_column(
-        SqlEnum(MembershipStatus, name="membership_status", validate_strings=True,
-               values_callable=lambda enum: [member.value for member in enum]),
-        default=MembershipStatus.ACTIVE,
-        nullable=False,
-    )
-    is_primary: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)

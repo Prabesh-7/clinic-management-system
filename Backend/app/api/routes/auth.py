@@ -14,7 +14,6 @@ from app.core.security import (
 from app.db.session import get_db
 from app.models.invite import AccountInvite
 from app.models.user import User, UserStatus
-from app.models.clinic import ClinicMembership, MembershipStatus
 from app.schemas.auth import (
     AcceptInviteRequest,
     ChangePasswordRequest,
@@ -147,16 +146,6 @@ async def accept_invite(
     user.password_hash = hash_password(password)
     user.status = UserStatus.ACTIVE
     invite.used_at = now
-    if invite.clinic_id is not None:
-        membership_result = await db.execute(
-            select(ClinicMembership).where(
-                ClinicMembership.user_id == user.id,
-                ClinicMembership.clinic_id == invite.clinic_id,
-            )
-        )
-        membership = membership_result.scalar_one_or_none()
-        if membership is not None:
-            membership.status = MembershipStatus.ACTIVE
     await db.commit()
     await db.refresh(user)
     return user

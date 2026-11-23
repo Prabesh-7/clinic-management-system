@@ -6,12 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_current_clinic, require_clinic_owner
 from app.db.session import get_db
-from app.models.clinic import (
-    Clinic,
-    ClinicLocation,
-    ClinicMembership,
-    ClinicWorkingHour,
-)
+from app.models.clinic import Clinic, ClinicLocation, ClinicWorkingHour
 from app.schemas.clinic import (
     ClinicLocationCreate,
     ClinicProfileUpdate,
@@ -24,19 +19,17 @@ router = APIRouter(prefix="/clinic", tags=["clinic"])
 
 @router.get("/me", response_model=ClinicResponse)
 async def clinic_me(
-    context: tuple[Clinic, ClinicMembership] = Depends(get_current_clinic),
+    clinic: Clinic = Depends(get_current_clinic),
 ):
-    clinic, _ = context
     return clinic
 
 
 @router.patch("/me", response_model=ClinicResponse)
 async def update_clinic_profile(
     payload: ClinicProfileUpdate,
-    context: tuple[Clinic, ClinicMembership] = Depends(require_clinic_owner),
+    clinic: Clinic = Depends(require_clinic_owner),
     db: AsyncSession = Depends(get_db),
 ):
-    clinic, _ = context
     for field, value in payload.model_dump(exclude_unset=True).items():
         setattr(clinic, field, value)
     await db.commit()
@@ -47,10 +40,9 @@ async def update_clinic_profile(
 @router.post("/locations")
 async def create_location(
     payload: ClinicLocationCreate,
-    context: tuple[Clinic, ClinicMembership] = Depends(require_clinic_owner),
+    clinic: Clinic = Depends(require_clinic_owner),
     db: AsyncSession = Depends(get_db),
 ):
-    clinic, _ = context
     location = ClinicLocation(clinic_id=clinic.id, **payload.model_dump())
     if location.is_primary:
         await db.execute(
@@ -68,10 +60,9 @@ async def create_location(
 async def replace_working_hours(
     location_id: UUID,
     payload: list[WorkingHourCreate],
-    context: tuple[Clinic, ClinicMembership] = Depends(require_clinic_owner),
+    clinic: Clinic = Depends(require_clinic_owner),
     db: AsyncSession = Depends(get_db),
 ):
-    clinic, _ = context
     location = await db.scalar(
         select(ClinicLocation).where(
             ClinicLocation.id == location_id,
