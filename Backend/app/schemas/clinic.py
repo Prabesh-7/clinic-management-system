@@ -1,5 +1,6 @@
 from datetime import time
 from uuid import UUID
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from pydantic import (
     BaseModel,
@@ -7,6 +8,7 @@ from pydantic import (
     EmailStr,
     Field,
     SecretStr,
+    field_validator,
     model_validator,
 )
 
@@ -71,31 +73,92 @@ class ClinicResponse(BaseModel):
 
 
 class ClinicProfileUpdate(BaseModel):
-    name: str | None = Field(default=None, min_length=2, max_length=200)
-    registration_number: str | None = Field(default=None, max_length=100)
-    website: str | None = Field(default=None, max_length=500)
-    description: str | None = Field(default=None, max_length=5000)
-    timezone: str | None = Field(default=None, max_length=100)
-    currency: str | None = Field(default=None, min_length=3, max_length=3)
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    name: str | None = Field(
+        default=None,
+        min_length=2,
+        max_length=200,
+        examples=["Smile Dental Clinic"],
+    )
+    registration_number: str | None = Field(
+        default=None,
+        max_length=100,
+        examples=["DCA-NEPAL-2026-001"],
+    )
+    website: str | None = Field(
+        default=None,
+        max_length=500,
+        examples=["https://smiledental.com"],
+    )
+    description: str | None = Field(
+        default=None,
+        max_length=5000,
+        examples=["Modern dental care for individuals and families."],
+    )
+    timezone: str | None = Field(
+        default=None,
+        max_length=100,
+        examples=["Asia/Kathmandu"],
+    )
+    currency: str | None = Field(
+        default=None,
+        min_length=3,
+        max_length=3,
+        examples=["NPR"],
+    )
+
+    @field_validator("timezone")
+    @classmethod
+    def validate_timezone(cls, value: str | None) -> str | None:
+        if value is None:
+            return value
+        try:
+            ZoneInfo(value)
+        except ZoneInfoNotFoundError as exc:
+            raise ValueError("Timezone must be a valid IANA timezone") from exc
+        return value
+
+    @field_validator("currency")
+    @classmethod
+    def normalize_currency(cls, value: str | None) -> str | None:
+        return value.upper() if value is not None else None
+
+    @field_validator("website")
+    @classmethod
+    def validate_website(cls, value: str | None) -> str | None:
+        if value is None:
+            return value
+        if not value.startswith(("http://", "https://")):
+            raise ValueError("Website must start with http:// or https://")
+        return value
+
+    @model_validator(mode="after")
+    def require_at_least_one_update(self):
+        if not self.model_fields_set:
+            raise ValueError("Provide at least one clinic detail to update")
+        return self
 
 
 class ClinicLocationCreate(BaseModel):
-    name: str = Field(min_length=2, max_length=200)
-    address_line1: str = Field(min_length=3, max_length=255)
-    address_line2: str | None = Field(default=None, max_length=255)
-    city: str = Field(min_length=2, max_length=100)
-    state: str | None = Field(default=None, max_length=100)
-    postal_code: str | None = Field(default=None, max_length=20)
-    country: str = Field(default="Nepal", max_length=100)
-    phone: str | None = Field(default=None, max_length=30)
-    email: EmailStr | None = None
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    name: str = Field(min_length=2, max_length=200, examples=["Main Clinic"])
+    address_line1: str = Field(min_length=3, max_length=255, examples=["123 Dental Road"])
+    address_line2: str | None = Field(default=None, max_length=255, examples=["Baneshwor"])
+    city: str = Field(min_length=2, max_length=100, examples=["Kathmandu"])
+    state: str | None = Field(default=None, max_length=100, examples=["Bagmati"])
+    postal_code: str | None = Field(default=None, max_length=20, examples=["44600"])
+    country: str = Field(default="Nepal", max_length=100, examples=["Nepal"])
+    phone: str | None = Field(default=None, max_length=30, examples=["+977-9800000000"])
+    email: EmailStr | None = Field(default=None, examples=["main@smiledental.com"])
     latitude: float | None = Field(default=None, ge=-90, le=90)
     longitude: float | None = Field(default=None, ge=-180, le=180)
     is_primary: bool = False
 
 
 class WorkingHourCreate(BaseModel):
-    day_of_week: int = Field(ge=0, le=6)
+    day_of_week: int = Field(ge=0, le=6, examples=[0])
     opens_at: time | None = None
     closes_at: time | None = None
     break_starts_at: time | None = None

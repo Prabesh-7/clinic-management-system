@@ -30,7 +30,14 @@ async def update_clinic_profile(
     clinic: Clinic = Depends(require_clinic_owner),
     db: AsyncSession = Depends(get_db),
 ):
-    for field, value in payload.model_dump(exclude_unset=True).items():
+    updates = payload.model_dump(exclude_unset=True)
+    if not updates:
+        raise HTTPException(
+            status_code=422,
+            detail="Provide at least one clinic detail to update",
+        )
+
+    for field, value in updates.items():
         setattr(clinic, field, value)
     await db.commit()
     await db.refresh(clinic)
