@@ -1,10 +1,12 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
 import { ApiError } from "@/lib/api/client";
 import { getCurrentUser, login } from "@/lib/api/auth";
 
 export default function HomePage() {
+  const router = useRouter();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
@@ -19,7 +21,9 @@ export default function HomePage() {
       const response = await login({ username, password });
       window.sessionStorage.setItem("access_token", response.access_token);
       const user = await getCurrentUser();
+      window.sessionStorage.setItem("current_user_role", user.role);
       setMessage(`Signed in as ${user.full_name} (${user.role})`);
+      router.push("/dashboard");
     } catch (error) {
       setMessage(
         error instanceof ApiError
