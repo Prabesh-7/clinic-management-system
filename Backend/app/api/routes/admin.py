@@ -39,6 +39,11 @@ async def create_clinic(
     db: AsyncSession = Depends(get_db),
     _admin: User = Depends(require_admin),
 ) -> Clinic:
+    if payload.name.strip().lower() in {"string", "test", "clinic"}:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Please enter a real clinic name, not a Swagger placeholder",
+        )
     existing_owner = await db.execute(
         select(User).where(
             (User.username == payload.owner_username)

@@ -18,10 +18,23 @@ from app.models.clinic import ClinicStatus
 class ClinicCreate(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
-    name: str = Field(min_length=2, max_length=200)
-    owner_username: str = Field(min_length=3, max_length=150, pattern=r"^[a-zA-Z0-9._-]+$")
-    owner_email: EmailStr
-    owner_full_name: str = Field(min_length=2, max_length=200)
+    name: str = Field(
+        min_length=2,
+        max_length=200,
+        examples=["Smile Dental Clinic"],
+    )
+    owner_username: str = Field(
+        min_length=3,
+        max_length=150,
+        pattern=r"^[a-zA-Z0-9._-]+$",
+        examples=["Dental-1"],
+    )
+    owner_email: EmailStr = Field(examples=["owner@example.com"])
+    owner_full_name: str = Field(
+        min_length=2,
+        max_length=200,
+        examples=["Dr. Nabin Babu"],
+    )
     timezone: str = "Asia/Kathmandu"
     currency: str = Field(default="NPR", min_length=3, max_length=3)
     credential_mode: Literal["invite", "temporary_password"] = "invite"

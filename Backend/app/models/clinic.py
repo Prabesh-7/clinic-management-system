@@ -30,7 +30,7 @@ class Clinic(Base):
     currency: Mapped[str] = mapped_column(String(3), default="NPR", nullable=False)
     owner_user_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("users.id", ondelete="PROTECT"),
+        ForeignKey("users.id", ondelete="NO ACTION"),
         unique=True,
         index=True,
         nullable=True,
