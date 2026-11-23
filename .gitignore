@@ -8,3 +8,6 @@ __pycache__/
 .mypy_cache/
 .ruff_cache/
 *.log
+.next/
+frontend/.env*
+!frontend/.env.example
