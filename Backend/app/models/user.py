@@ -15,7 +15,6 @@ class UserRole(str, Enum):
 
 
 class UserStatus(str, Enum):
-    INVITE_PENDING = "invite_pending"
     ACTIVE = "active"
     DISABLED = "disabled"
 
@@ -66,7 +65,7 @@ class User(Base):
             values_callable=lambda enum: [member.value for member in enum],
         ),
         nullable=False,
-        default=UserStatus.INVITE_PENDING,
+        default=UserStatus.ACTIVE,
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

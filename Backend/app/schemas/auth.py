@@ -30,23 +30,3 @@ class ChangePasswordRequest(BaseModel):
         if not any(not char.isalnum() for char in value):
             raise ValueError("Password must contain a special character")
         return password
-
-
-class AcceptInviteRequest(BaseModel):
-    token: SecretStr = Field(min_length=32)
-    password: SecretStr = Field(min_length=12, max_length=128)
-    password_confirmation: SecretStr = Field(min_length=12, max_length=128)
-
-    @field_validator("password")
-    @classmethod
-    def validate_password(cls, password: SecretStr) -> SecretStr:
-        value = password.get_secret_value()
-        if not any(char.islower() for char in value):
-            raise ValueError("Password must contain a lowercase letter")
-        if not any(char.isupper() for char in value):
-            raise ValueError("Password must contain an uppercase letter")
-        if not any(char.isdigit() for char in value):
-            raise ValueError("Password must contain a digit")
-        if not any(not char.isalnum() for char in value):
-            raise ValueError("Password must contain a special character")
-        return password

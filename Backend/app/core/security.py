@@ -1,5 +1,3 @@
-import hashlib
-import secrets
 from datetime import datetime, timedelta, timezone
 
 import jwt
@@ -52,11 +50,3 @@ def decode_access_token(token: str) -> dict:
         settings.jwt_secret,
         algorithms=[settings.jwt_algorithm],
     )
-
-
-def generate_invite_token() -> str:
-    return secrets.token_urlsafe(48)
-
-
-def hash_invite_token(token: str) -> str:
-    return hashlib.sha256(token.encode("utf-8")).hexdigest()

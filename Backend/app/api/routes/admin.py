@@ -1,16 +1,10 @@
-from datetime import datetime, timedelta, timezone
-
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import require_admin
-from app.core.config import get_settings
-from app.core.security import generate_invite_token, hash_invite_token
 from app.db.session import get_db
-from app.models.invite import AccountInvite
 from app.models.user import User, UserRole, UserStatus
-from app.services.email import send_invite_email
 from app.models.clinic import (
     Clinic,
     ClinicStatus,
@@ -78,42 +72,13 @@ async def create_clinic(
         email=str(payload.owner_email).lower(),
         full_name=payload.owner_full_name,
         role=UserRole.DENTAL,
-        status=UserStatus.INVITE_PENDING,
-        password_hash=None,
+        status=UserStatus.ACTIVE,
+        password_hash=hash_password(payload.owner_password.get_secret_value()),
+        must_change_password=False,
     )
     db.add(owner)
     await db.flush()
     clinic.owner_user_id = owner.id
-
-    raw_token: str | None = None
-    if payload.credential_mode == "invite":
-        raw_token = generate_invite_token()
-        db.add(AccountInvite(
-            user_id=owner.id,
-            clinic_id=clinic.id,
-            token_hash=hash_invite_token(raw_token),
-            expires_at=datetime.now(timezone.utc)
-            + timedelta(hours=get_settings().invite_token_hours),
-        ))
-    else:
-        owner.status = UserStatus.ACTIVE
-        owner.password_hash = hash_password(
-            payload.temporary_password.get_secret_value()
-        )
-        owner.must_change_password = True
     await db.commit()
     await db.refresh(clinic)
-
-    if raw_token is not None:
-        try:
-            await send_invite_email(
-                recipient_email=owner.email,
-                recipient_name=owner.full_name,
-                raw_token=raw_token,
-            )
-        except Exception as exc:
-            raise HTTPException(
-                status_code=202,
-                detail="Clinic created, but the owner invite email could not be sent",
-            ) from exc
     return clinic

@@ -1,5 +1,4 @@
 from app.schemas.auth import (
-    AcceptInviteRequest,
     ChangePasswordRequest,
     LoginRequest,
     TokenResponse,
@@ -14,7 +13,6 @@ from app.schemas.clinic import (
 )
 
 __all__ = [
-    "AcceptInviteRequest",
     "LoginRequest",
     "TokenResponse",
     "UserCreate",
