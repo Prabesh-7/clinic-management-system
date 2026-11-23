@@ -27,6 +27,8 @@ def verify_password(password: str, password_hash: str) -> bool:
 
 def create_access_token(*, subject: str, role: str) -> str:
     settings = get_settings()
+    if settings.jwt_secret is None:
+        raise RuntimeError("JWT_SECRET is not configured")
     expires = datetime.now(timezone.utc) + timedelta(
         minutes=settings.jwt_access_token_minutes
     )
@@ -45,6 +47,8 @@ def create_access_token(*, subject: str, role: str) -> str:
 
 def decode_access_token(token: str) -> dict:
     settings = get_settings()
+    if settings.jwt_secret is None:
+        raise RuntimeError("JWT_SECRET is not configured")
     return jwt.decode(
         token,
         settings.jwt_secret,

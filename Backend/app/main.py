@@ -13,8 +13,22 @@ from app.api.routes import router as api_router
 from app.db.session import close_database, get_engine
 
 
+def verify_production_configuration() -> None:
+    settings = get_settings()
+    if settings.app_env == "production":
+        if not settings.database_url:
+            raise RuntimeError("DATABASE_URL is required in production")
+        if settings.jwt_secret is None or settings.jwt_secret.strip() in {
+            "",
+            "change-this-in-production",
+            "replace-with-at-least-32-random-characters",
+        }:
+            raise RuntimeError("A secure JWT_SECRET is required in production")
+
+
 @asynccontextmanager
 async def lifespan(application: FastAPI):
+    verify_production_configuration()
     yield
     await close_database()
 
